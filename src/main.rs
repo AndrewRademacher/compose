@@ -30,7 +30,22 @@ fn main() {
         "Compose in {}s",
         (compose_end - compose_start).as_secs_f32()
     );
-    play_sample(sample.view());
+    // play_sample(sample.view());
+    write_sample(sample.view());
+}
+
+fn write_sample(sample: ArrayView1<f32>) {
+    let spec = hound::WavSpec {
+        channels: 1,
+        sample_rate: SAMPLE_RATE,
+        bits_per_sample: 16,
+        sample_format: hound::SampleFormat::Int,
+    };
+    let mut writer = hound::WavWriter::create("canon.wav", spec).unwrap();
+    to_i16(sample)
+        .iter()
+        .for_each(|x| writer.write_sample(*x).unwrap());
+    writer.finalize().unwrap();
 }
 
 fn play_sample(sample: ArrayView1<f32>) {
