@@ -21,7 +21,6 @@ fn main() {
     let parse_start = Instant::now();
     let (_, canon_sheet) = parse::sheet(&canon_str).unwrap();
     let parse_end = Instant::now();
-    println!("Parse in {}s", (parse_end - parse_start).as_secs_f32());
 
     let compose_start = Instant::now();
     let generator = SineGenerator::new(40f32, SAMPLE_RATE);
