@@ -5,7 +5,7 @@ use rodio::Source;
 use std::fs::File;
 use std::io::Read;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 mod instrument;
 mod parse;
@@ -18,11 +18,19 @@ fn main() {
     let mut canon_file = File::open("./sheets/canon_in_d.sht").unwrap();
     let mut canon_str = String::new();
     canon_file.read_to_string(&mut canon_str).unwrap();
+    let parse_start = Instant::now();
     let (_, canon_sheet) = parse::sheet(&canon_str).unwrap();
+    let parse_end = Instant::now();
+    println!("Parse in {}s", (parse_end - parse_start).as_secs_f32());
 
+    let compose_start = Instant::now();
     let generator = SineGenerator::new(40f32, SAMPLE_RATE);
-    // let sample = generator.sample(&Note::new(Pitch::A4, Value::Half, Modifier::Natural));
     let sample = generator.compose(&canon_sheet);
+    let compose_end = Instant::now();
+    println!(
+        "Compose in {}s",
+        (compose_end - compose_start).as_secs_f32()
+    );
     play_sample(sample.view());
 }
 
