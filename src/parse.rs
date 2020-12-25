@@ -1,6 +1,6 @@
 use crate::sheet::{Line, Modifier, Note, Pitch, Sheet, Value};
 use nom::bytes::complete::{tag, take_while};
-use nom::character::complete::{newline, one_of};
+use nom::character::complete::{line_ending, one_of};
 use nom::combinator::{map_res, opt};
 use nom::multi::separated_list0;
 use nom::sequence::tuple;
@@ -12,8 +12,8 @@ pub fn sheet(input: &str) -> IResult<&str, Sheet> {
     let (input, _) = tag("x")(input)?;
     let (input, line_value) = value(input)?;
 
-    let (input, _) = tuple((newline, tag("--"), newline))(input)?;
-    let (input, lines) = separated_list0(newline, line)(input)?;
+    let (input, _) = tuple((line_ending, tag("--"), line_ending))(input)?;
+    let (input, lines) = separated_list0(line_ending, line)(input)?;
 
     Ok((input, Sheet::new(bpm as f32, line_value, lines)))
 }
@@ -70,85 +70,65 @@ fn pitch(input: &str) -> IResult<&str, Pitch> {
 
 fn match_pitch(letter: char, number: &str) -> Pitch {
     match (letter, number) {
-        ('A', "1") => Pitch::A1,
-        ('B', "1") => Pitch::B1,
+        ('A', "0") => Pitch::A0,
+        ('B', "0") => Pitch::B0,
         ('C', "1") => Pitch::C1,
         ('D', "1") => Pitch::D1,
         ('E', "1") => Pitch::E1,
         ('F', "1") => Pitch::F1,
         ('G', "1") => Pitch::G1,
 
-        ('A', "2") => Pitch::A2,
-        ('B', "2") => Pitch::B2,
+        ('A', "1") => Pitch::A1,
+        ('B', "1") => Pitch::B1,
         ('C', "2") => Pitch::C2,
         ('D', "2") => Pitch::D2,
         ('E', "2") => Pitch::E2,
         ('F', "2") => Pitch::F2,
         ('G', "2") => Pitch::G2,
 
-        ('A', "3") => Pitch::A3,
-        ('B', "3") => Pitch::B3,
+        ('A', "2") => Pitch::A2,
+        ('B', "2") => Pitch::B2,
         ('C', "3") => Pitch::C3,
         ('D', "3") => Pitch::D3,
         ('E', "3") => Pitch::E3,
         ('F', "3") => Pitch::F3,
         ('G', "3") => Pitch::G3,
 
-        ('A', "4") => Pitch::A4,
-        ('B', "4") => Pitch::B4,
+        ('A', "3") => Pitch::A3,
+        ('B', "3") => Pitch::B3,
         ('C', "4") => Pitch::C4,
         ('D', "4") => Pitch::D4,
         ('E', "4") => Pitch::E4,
         ('F', "4") => Pitch::F4,
         ('G', "4") => Pitch::G4,
 
-        ('A', "5") => Pitch::A5,
-        ('B', "5") => Pitch::B5,
+        ('A', "4") => Pitch::A4,
+        ('B', "4") => Pitch::B4,
         ('C', "5") => Pitch::C5,
         ('D', "5") => Pitch::D5,
         ('E', "5") => Pitch::E5,
         ('F', "5") => Pitch::F5,
         ('G', "5") => Pitch::G5,
 
-        ('A', "6") => Pitch::A6,
-        ('B', "6") => Pitch::B6,
+        ('A', "5") => Pitch::A5,
+        ('B', "5") => Pitch::B5,
         ('C', "6") => Pitch::C6,
         ('D', "6") => Pitch::D6,
         ('E', "6") => Pitch::E6,
         ('F', "6") => Pitch::F6,
         ('G', "6") => Pitch::G6,
 
-        ('A', "7") => Pitch::A7,
-        ('B', "7") => Pitch::B7,
+        ('A', "6") => Pitch::A6,
+        ('B', "6") => Pitch::B6,
         ('C', "7") => Pitch::C7,
         ('D', "7") => Pitch::D7,
         ('E', "7") => Pitch::E7,
         ('F', "7") => Pitch::F7,
         ('G', "7") => Pitch::G7,
 
-        ('A', "8") => Pitch::A8,
-        ('B', "8") => Pitch::B8,
+        ('A', "7") => Pitch::A7,
+        ('B', "7") => Pitch::B7,
         ('C', "8") => Pitch::C8,
-        ('D', "8") => Pitch::D8,
-        ('E', "8") => Pitch::E8,
-        ('F', "8") => Pitch::F8,
-        ('G', "8") => Pitch::G8,
-
-        ('A', "9") => Pitch::A9,
-        ('B', "9") => Pitch::B9,
-        ('C', "9") => Pitch::C9,
-        ('D', "9") => Pitch::D9,
-        ('E', "9") => Pitch::E9,
-        ('F', "9") => Pitch::F9,
-        ('G', "9") => Pitch::G9,
-
-        ('A', "10") => Pitch::A10,
-        ('B', "10") => Pitch::B10,
-        ('C', "10") => Pitch::C10,
-        ('D', "10") => Pitch::D10,
-        ('E', "10") => Pitch::E10,
-        ('F', "10") => Pitch::F10,
-        ('G', "10") => Pitch::G10,
 
         _ => unreachable!(),
     }
