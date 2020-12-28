@@ -3,6 +3,7 @@ use ndarray::{s, ArcArray1, Array, Array1, ArrayView1, Zip};
 use nom::bitvec::macros::internal::u8_from_ne_bits;
 use nom::lib::std::collections::{HashMap, HashSet};
 use rayon::prelude::*;
+use std::time::Instant;
 
 pub struct SineGenerator {
     sample_rate: u32,
