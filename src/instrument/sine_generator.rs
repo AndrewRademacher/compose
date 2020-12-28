@@ -1,13 +1,11 @@
-use crate::sheet::{Modifier, Note, Pitch, Sheet, Value};
+use crate::sheet::{Modifier, Note, Pitch, Sheet, Value, BPM};
 use ndarray::{s, Array, Array1, ArrayView1, Zip};
 use nom::bitvec::macros::internal::u8_from_ne_bits;
 use nom::lib::std::collections::HashMap;
 
-type Bpm = f32;
-
 pub struct SineGenerator {
     sample_rate: u32,
-    samples: HashMap<(Note, Bpm), Array1<f32>>,
+    samples: HashMap<(Note, BPM), Array1<f32>>,
 }
 
 impl SineGenerator {
@@ -19,7 +17,7 @@ impl SineGenerator {
     }
 
     pub fn compose(&self, sheet: &Sheet) -> Array1<f32> {
-        let line_time = 60f32 / sheet.bpm * sheet.line_value.divisor();
+        let line_time = 60f32 / (sheet.bpm as f32) * sheet.line_value.divisor();
         let composition_time = line_time * sheet.lines.len() as f32;
         let line_length = (line_time * self.sample_rate as f32) as usize;
         let composition_length = line_length * sheet.lines.len();
@@ -40,12 +38,12 @@ impl SineGenerator {
         timeline
     }
 
-    pub fn sample(&self, note: Note, bpm: f32) -> Array1<f32> {
+    pub fn sample(&self, note: Note, bpm: BPM) -> Array1<f32> {
         self.sample_at_rate(&note, bpm)
     }
 
-    fn sample_at_rate(&self, note: &Note, bpm: f32) -> Array1<f32> {
-        let end_time = 60f32 / bpm * note.value.divisor();
+    fn sample_at_rate(&self, note: &Note, bpm: BPM) -> Array1<f32> {
+        let end_time = 60f32 / (bpm as f32) * note.value.divisor();
         let max_amplitude = 1f32;
         let pi = std::f32::consts::PI;
         let f = fundamental_frequency(&note);

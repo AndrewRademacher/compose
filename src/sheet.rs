@@ -1,12 +1,14 @@
+pub type BPM = i32;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Sheet {
-    pub bpm: f32,
+    pub bpm: BPM,
     pub line_value: Value,
     pub lines: Vec<Line>,
 }
 
 impl Sheet {
-    pub fn new(bpm: f32, line_value: Value, lines: Vec<Line>) -> Sheet {
+    pub fn new(bpm: BPM, line_value: Value, lines: Vec<Line>) -> Sheet {
         Sheet {
             bpm,
             line_value,

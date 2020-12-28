@@ -15,7 +15,7 @@ pub fn sheet(input: &str) -> IResult<&str, Sheet> {
     let (input, _) = tuple((line_ending, tag("--"), line_ending))(input)?;
     let (input, lines) = separated_list0(line_ending, line)(input)?;
 
-    Ok((input, Sheet::new(bpm as f32, line_value, lines)))
+    Ok((input, Sheet::new(bpm as i32, line_value, lines)))
 }
 
 pub fn line(input: &str) -> IResult<&str, Line> {
