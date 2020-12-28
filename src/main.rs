@@ -24,7 +24,7 @@ fn main() {
     println!("Parse in {}s", (parse_end - parse_start).as_secs_f32());
 
     let compose_start = Instant::now();
-    let generator = SineGenerator::new(SAMPLE_RATE);
+    let mut generator = SineGenerator::new(SAMPLE_RATE);
     let sample = generator.compose(&canon_sheet);
     // let sample = generator.sample(
     //     &Note::new(Pitch::C4, Value::Whole, Modifier::Natural),

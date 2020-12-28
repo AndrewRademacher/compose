@@ -1,11 +1,11 @@
 use crate::sheet::{Modifier, Note, Pitch, Sheet, Value, BPM};
-use ndarray::{s, Array, Array1, ArrayView1, Zip};
+use ndarray::{s, ArcArray1, Array, Array1, ArrayView1, Zip};
 use nom::bitvec::macros::internal::u8_from_ne_bits;
 use nom::lib::std::collections::HashMap;
 
 pub struct SineGenerator {
     sample_rate: u32,
-    samples: HashMap<(Note, BPM), Array1<f32>>,
+    samples: HashMap<(Note, BPM), ArcArray1<f32>>,
 }
 
 impl SineGenerator {
@@ -16,7 +16,7 @@ impl SineGenerator {
         }
     }
 
-    pub fn compose(&self, sheet: &Sheet) -> Array1<f32> {
+    pub fn compose(&mut self, sheet: &Sheet) -> Array1<f32> {
         let line_time = 60f32 / (sheet.bpm as f32) * sheet.line_value.divisor();
         let composition_time = line_time * sheet.lines.len() as f32;
         let line_length = (line_time * self.sample_rate as f32) as usize;
@@ -26,7 +26,7 @@ impl SineGenerator {
 
         for (pos, line) in sheet.lines.iter().enumerate() {
             for note in line.0.iter() {
-                let sample = self.sample_at_rate(&note, sheet.bpm);
+                let sample = self.sample(*note, sheet.bpm);
                 let loc = pos * line_length;
                 let loc_end = (pos * line_length) + sample.len();
 
@@ -38,17 +38,24 @@ impl SineGenerator {
         timeline
     }
 
-    pub fn sample(&self, note: Note, bpm: BPM) -> Array1<f32> {
-        self.sample_at_rate(&note, bpm)
+    pub fn sample(&mut self, note: Note, bpm: BPM) -> ArcArray1<f32> {
+        match self.samples.get(&(note, bpm)) {
+            Some(sample) => sample.clone(),
+            None => {
+                let sample = self.sample_at_rate(note, bpm);
+                self.samples.insert((note, bpm), sample.clone());
+                sample
+            }
+        }
     }
 
-    fn sample_at_rate(&self, note: &Note, bpm: BPM) -> Array1<f32> {
+    fn sample_at_rate(&self, note: Note, bpm: BPM) -> ArcArray1<f32> {
         let end_time = 60f32 / (bpm as f32) * note.value.divisor();
         let max_amplitude = 1f32;
         let pi = std::f32::consts::PI;
         let f = fundamental_frequency(&note);
 
-        let mut time = Array1::<f32>::linspace(
+        let mut time = ArcArray1::<f32>::linspace(
             0f32,
             end_time,
             ((self.sample_rate as f32 * end_time) as usize),
