@@ -1,5 +1,6 @@
 use crate::sheet::{Modifier, Note, Pitch, Sheet, Value};
-use ndarray::{s, Array, Array1};
+use ndarray::{s, Array, Array1, Zip};
+use nom::bitvec::macros::internal::u8_from_ne_bits;
 use nom::lib::std::collections::HashMap;
 
 pub struct SineGenerator {
@@ -18,19 +19,20 @@ impl SineGenerator {
         let line_length = (line_time * self.sample_rate as f32) as usize;
         let composition_length = line_length * sheet.lines.len();
 
-        let mut time = Array1::<f32>::linspace(0f32, composition_time, composition_length);
+        let mut timeline = Array1::<f32>::zeros(composition_length);
 
         for (pos, line) in sheet.lines.iter().enumerate() {
             for note in line.0.iter() {
                 let sample = self.sample_at_rate(&note, sheet.bpm);
                 let loc = pos * line_length;
                 let loc_end = (pos * line_length) + sample.len();
-                let mut view = time.slice_mut(s![loc..loc_end]);
+
+                let mut view = timeline.slice_mut(s![loc..loc_end]);
                 view += &sample;
             }
         }
 
-        time
+        timeline
     }
 
     pub fn sample(&self, note: &Note) -> Array1<f32> {
@@ -39,7 +41,8 @@ impl SineGenerator {
 
     fn sample_at_rate(&self, note: &Note, bpm: f32) -> Array1<f32> {
         let end_time = 60f32 / bpm * note.value.divisor();
-        let a = 5000f32; // amplitude
+        // let max_amplitude = 5000f32; // max amplitude
+        let max_amplitude = 1f32;
         let pi = std::f32::consts::PI;
         let f = fundamental_frequency(&note);
 
@@ -48,7 +51,20 @@ impl SineGenerator {
             end_time,
             ((self.sample_rate as f32 * end_time) as usize),
         );
-        time.map_inplace(|t| *t = a * (2f32 * pi * f * *t).sin());
+        let percent = time.map(|t| t / end_time);
+        let amplitude = percent.map(|p| match p {
+            p if *p < 0.1 => (*p / 0.1) * max_amplitude,
+            p if *p < 0.8 => max_amplitude,
+            // p => ()
+            p => (1.0 - ((*p - 0.8) / 0.2)) * max_amplitude
+            // p if *p < 0.9 => (0.1 - (*p - 0.8)) * max_amplitude,
+            // p => 0f32,
+        });
+
+        Zip::from(&mut time)
+            .and(&amplitude)
+            .apply(|t, &a| *t = a * (2f32 * pi * f * *t).sin());
+
         time
     }
 }

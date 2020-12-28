@@ -25,13 +25,14 @@ fn main() {
     let compose_start = Instant::now();
     let generator = SineGenerator::new(40f32, SAMPLE_RATE);
     let sample = generator.compose(&canon_sheet);
+    // let sample = generator.sample(&Note::new(Pitch::C4, Value::Whole, Modifier::Natural));
     let compose_end = Instant::now();
     println!(
         "Compose in {}s",
         (compose_end - compose_start).as_secs_f32()
     );
-    // play_sample(sample.view());
-    write_sample(sample.view());
+    play_sample(sample.view());
+    // write_sample(sample.view());
 }
 
 fn write_sample(sample: ArrayView1<f32>) {
@@ -64,7 +65,8 @@ pub struct NdAudio {
 }
 
 fn to_i16(input: ArrayView1<f32>) -> Array1<i16> {
-    input.iter().map(|v| *v as i16).collect()
+    // input.iter().map(|v| *v as i16).collect()
+    input.iter().map(|v| (*v * 5000f32) as i16).collect()
 }
 
 fn to_ndaudio(input: ArrayView1<f32>) -> NdAudio {
