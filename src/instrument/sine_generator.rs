@@ -1,7 +1,8 @@
 use crate::sheet::{Modifier, Note, Pitch, Sheet, Value, BPM};
 use ndarray::{s, ArcArray1, Array, Array1, ArrayView1, Zip};
 use nom::bitvec::macros::internal::u8_from_ne_bits;
-use nom::lib::std::collections::HashMap;
+use nom::lib::std::collections::{HashMap, HashSet};
+use rayon::prelude::*;
 
 pub struct SineGenerator {
     sample_rate: u32,
@@ -17,6 +18,8 @@ impl SineGenerator {
     }
 
     pub fn compose(&mut self, sheet: &Sheet) -> Array1<f32> {
+        self.load_sample_cache(sheet.unique_notes(), sheet.bpm);
+
         let line_time = 60f32 / (sheet.bpm as f32) * sheet.line_value.divisor();
         let composition_time = line_time * sheet.lines.len() as f32;
         let line_length = (line_time * self.sample_rate as f32) as usize;
@@ -47,6 +50,17 @@ impl SineGenerator {
                 sample
             }
         }
+    }
+
+    fn load_sample_cache(&mut self, notes: HashSet<Note>, bpm: BPM) {
+        let samples = notes
+            .par_iter()
+            .map(|note| ((*note, bpm), self.sample_at_rate(*note, bpm)))
+            .collect::<Vec<((Note, BPM), ArcArray1<f32>)>>();
+
+        samples.iter().for_each(|((note, bpm), sample)| {
+            self.samples.insert((*note, *bpm), sample.clone());
+        });
     }
 
     fn sample_at_rate(&self, note: Note, bpm: BPM) -> ArcArray1<f32> {

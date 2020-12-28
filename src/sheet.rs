@@ -1,3 +1,5 @@
+use nom::lib::std::collections::HashSet;
+
 pub type BPM = i32;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -14,6 +16,16 @@ impl Sheet {
             line_value,
             lines,
         }
+    }
+
+    pub fn unique_notes(&self) -> HashSet<Note> {
+        let mut out = HashSet::new();
+        for line in self.lines.iter() {
+            for note in line.0.iter() {
+                out.insert(*note);
+            }
+        }
+        out
     }
 }
 
