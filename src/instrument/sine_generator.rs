@@ -1,16 +1,21 @@
 use crate::sheet::{Modifier, Note, Pitch, Sheet, Value};
-use ndarray::{s, Array, Array1, Zip};
+use ndarray::{s, Array, Array1, ArrayView1, Zip};
 use nom::bitvec::macros::internal::u8_from_ne_bits;
 use nom::lib::std::collections::HashMap;
 
+type Bpm = f32;
+
 pub struct SineGenerator {
-    bpm: f32,
     sample_rate: u32,
+    samples: HashMap<(Note, Bpm), Array1<f32>>,
 }
 
 impl SineGenerator {
-    pub fn new(bpm: f32, sample_rate: u32) -> SineGenerator {
-        SineGenerator { bpm, sample_rate }
+    pub fn new(sample_rate: u32) -> SineGenerator {
+        SineGenerator {
+            sample_rate,
+            samples: HashMap::new(),
+        }
     }
 
     pub fn compose(&self, sheet: &Sheet) -> Array1<f32> {
@@ -35,13 +40,12 @@ impl SineGenerator {
         timeline
     }
 
-    pub fn sample(&self, note: &Note) -> Array1<f32> {
-        self.sample_at_rate(&note, self.bpm)
+    pub fn sample(&self, note: Note, bpm: f32) -> Array1<f32> {
+        self.sample_at_rate(&note, bpm)
     }
 
     fn sample_at_rate(&self, note: &Note, bpm: f32) -> Array1<f32> {
         let end_time = 60f32 / bpm * note.value.divisor();
-        // let max_amplitude = 5000f32; // max amplitude
         let max_amplitude = 1f32;
         let pi = std::f32::consts::PI;
         let f = fundamental_frequency(&note);
@@ -55,10 +59,7 @@ impl SineGenerator {
         let amplitude = percent.map(|p| match p {
             p if *p < 0.1 => (*p / 0.1) * max_amplitude,
             p if *p < 0.8 => max_amplitude,
-            // p => ()
-            p => (1.0 - ((*p - 0.8) / 0.2)) * max_amplitude
-            // p if *p < 0.9 => (0.1 - (*p - 0.8)) * max_amplitude,
-            // p => 0f32,
+            p => (1.0 - ((*p - 0.8) / 0.2)) * max_amplitude,
         });
 
         Zip::from(&mut time)
