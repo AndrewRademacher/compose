@@ -1,9 +1,8 @@
-use crate::sheet::{Modifier, Note, Pitch, Sheet, Value, BPM};
-use ndarray::{s, ArcArray1, Array, Array1, ArrayView1, Zip};
-use nom::bitvec::macros::internal::u8_from_ne_bits;
+use ndarray::{s, ArcArray1, Array1, Zip};
 use nom::lib::std::collections::{HashMap, HashSet};
 use rayon::prelude::*;
-use std::time::Instant;
+
+use crate::sheet::{Modifier, Note, Pitch, Sheet, BPM};
 
 pub struct SineGenerator {
     sample_rate: u32,
@@ -22,7 +21,7 @@ impl SineGenerator {
         self.load_sample_cache(sheet.unique_notes(), sheet.bpm);
 
         let line_time = 60f32 / (sheet.bpm as f32) * sheet.line_value.divisor();
-        let composition_time = line_time * sheet.lines.len() as f32;
+        // let composition_time = line_time * sheet.lines.len() as f32;
         let line_length = (line_time * self.sample_rate as f32) as usize;
         let composition_length = line_length * sheet.lines.len();
 
@@ -73,7 +72,7 @@ impl SineGenerator {
         let mut time = ArcArray1::<f32>::linspace(
             0f32,
             end_time,
-            ((self.sample_rate as f32 * end_time) as usize),
+            (self.sample_rate as f32 * end_time) as usize,
         );
         let percent = time.map(|t| t / end_time);
         let amplitude = percent.map(|p| match p {
@@ -84,7 +83,7 @@ impl SineGenerator {
 
         Zip::from(&mut time)
             .and(&amplitude)
-            .apply(|t, &a| *t = a * (2f32 * pi * f * *t).sin());
+            .for_each(|t, &a| *t = a * (2f32 * pi * f * *t).sin());
 
         time
     }

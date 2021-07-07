@@ -39,16 +39,6 @@ pub struct Note {
     pub modifier: Modifier,
 }
 
-impl Note {
-    pub fn new(pitch: Pitch, value: Value, modifier: Modifier) -> Note {
-        Note {
-            pitch,
-            value,
-            modifier,
-        }
-    }
-}
-
 #[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Value {
     Whole,

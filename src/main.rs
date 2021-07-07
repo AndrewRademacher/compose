@@ -1,11 +1,13 @@
-use crate::instrument::SineGenerator;
-use crate::sheet::{Modifier, Note, Pitch, Sheet, Value};
-use ndarray::{Array1, ArrayView1};
-use rodio::Source;
 use std::fs::File;
 use std::io::Read;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+
+use anyhow::Result;
+use ndarray::{Array1, ArrayView1};
+use rodio::Source;
+
+use crate::instrument::SineGenerator;
 
 mod instrument;
 mod parse;
@@ -14,49 +16,56 @@ mod synth;
 
 const SAMPLE_RATE: u32 = 96000;
 
-fn main() {
-    let mut canon_file = File::open("./sheets/canon_in_d.sht").unwrap();
+fn main() -> Result<()> {
+    let mut canon_file = File::open("./sheets/canon_in_d.sht")?;
     let mut canon_str = String::new();
-    canon_file.read_to_string(&mut canon_str).unwrap();
-    let parse_start = Instant::now();
-    let (_, canon_sheet) = parse::sheet(&canon_str).unwrap();
-    let parse_end = Instant::now();
-    println!("Parse in {}s", (parse_end - parse_start).as_secs_f32());
+    canon_file.read_to_string(&mut canon_str)?;
+    let parse_timer = Instant::now();
+    let (_, canon_sheet) =
+        parse::sheet(&canon_str).map_err(|_| anyhow::anyhow!("Failed to parse sheet."))?;
+    let parse_timer = Instant::now() - parse_timer;
+    println!("Parse in {}s", parse_timer.as_secs_f32());
 
-    let compose_start = Instant::now();
+    let compose_timer = Instant::now();
     let mut generator = SineGenerator::new(SAMPLE_RATE);
     let sample = generator.compose(&canon_sheet);
-    // let sample = generator.sample(
-    //     &Note::new(Pitch::C4, Value::Whole, Modifier::Natural),
-    //     35f32,
-    // );
-    let compose_end = Instant::now();
+    let compose_timer = Instant::now() - compose_timer;
+    println!("Compose in {}s", compose_timer.as_secs_f32());
+
+    let write_timer = Instant::now();
+    write_sample(sample.view())?;
+    let write_timer = Instant::now() - write_timer;
+    println!("Written to file in {}s", write_timer.as_secs_f32());
+
     println!(
-        "Compose in {}s",
-        (compose_end - compose_start).as_secs_f32()
+        "\nTotal computation time: {}s",
+        (parse_timer + compose_timer + write_timer).as_secs_f32()
     );
-    play_sample(sample.view());
-    // write_sample(sample.view());
+
+    // play_sample(sample.view())?;
+
+    Ok(())
 }
 
-fn write_sample(sample: ArrayView1<f32>) {
+fn write_sample(sample: ArrayView1<f32>) -> Result<()> {
     let spec = hound::WavSpec {
         channels: 1,
         sample_rate: SAMPLE_RATE,
         bits_per_sample: 16,
         sample_format: hound::SampleFormat::Int,
     };
-    let mut writer = hound::WavWriter::create("canon.wav", spec).unwrap();
+    let mut writer = hound::WavWriter::create("canon.wav", spec)?;
     to_i16(sample)
         .iter()
-        .for_each(|x| writer.write_sample(*x).unwrap());
-    writer.finalize().unwrap();
+        .try_for_each(|x| writer.write_sample(*x))?;
+    writer.finalize()?;
+    Ok(())
 }
 
-fn play_sample(sample: ArrayView1<f32>) {
+fn play_sample(sample: ArrayView1<f32>) -> Result<()> {
     let source = to_ndaudio(sample);
-    let (stream, stream_handle) = rodio::OutputStream::try_default().unwrap();
-    stream_handle.play_raw(source.convert_samples());
+    let (_stream, stream_handle) = rodio::OutputStream::try_default()?;
+    stream_handle.play_raw(source.convert_samples())?;
 
     loop {
         sleep(Duration::from_millis(10));

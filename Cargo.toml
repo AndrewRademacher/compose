@@ -4,9 +4,14 @@ version = "0.1.0"
 authors = ["AndrewRademacher <andrewrademacher@icloud.com>"]
 edition = "2018"
 
+[profile.release]
+opt-level = 3
+lto = true
+
 [dependencies]
-rodio = "^0.13"
-ndarray = { version = "^0.14", features = ["rayon"] }
-rayon = "^1.5"
-hound = "^3.4"
-nom = "^6.0"
+rodio = "0.14.0"
+ndarray = { version = "0.15.3", features = ["rayon"] }
+rayon = "1.5.1"
+hound = "3.4.0"
+nom = "7.0.0-alpha1"
+anyhow = "1.0.41"

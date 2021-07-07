@@ -1,11 +1,13 @@
-use crate::sheet::{Line, Modifier, Note, Pitch, Sheet, Value};
+use std::str::FromStr;
+
 use nom::bytes::complete::{tag, take_while};
 use nom::character::complete::{line_ending, one_of};
 use nom::combinator::{map_res, opt};
 use nom::multi::separated_list0;
 use nom::sequence::tuple;
 use nom::IResult;
-use std::str::FromStr;
+
+use crate::sheet::{Line, Modifier, Note, Pitch, Sheet, Value};
 
 pub fn sheet(input: &str) -> IResult<&str, Sheet> {
     let (input, bpm) = number_usize(input)?;
